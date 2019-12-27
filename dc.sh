@@ -106,11 +106,11 @@ for dir in $(ls -d */); do
                 img="${input[1]}"
                 old_images=$(docker images -a | grep "$img" | awk '{print $3}')  # get image id
 
-                docker pull "${img/\$\{DOMAIN\}/$DOMAIN}"  # substitute '${DOMAIN}' variable
+                result=$(docker pull "${img/\$\{DOMAIN\}/$DOMAIN}")  # substitute '${DOMAIN}' variable
                 
                 docker-compose up -d
 
-                if [ -n "$CLEANUP" ]; then
+                if [ -n "$CLEANUP" ] && [[ ! $result =~ "up to date" ]]; then
                     for image in ${old_images[*]}; do
                         echo -e "\033[0;31mremove old image '$image'\033[0m"  #docker rmi $image
                         docker rmi $image
