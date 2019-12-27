@@ -108,7 +108,7 @@ for dir in $(ls -d */); do
 
                 result=$(docker pull "${img/\$\{DOMAIN\}/$DOMAIN}")  # substitute '${DOMAIN}' variable
                 if [[ ! $result =~ "up to date" ]]; then
-                    echo $result
+                    echo -e "\033[0;32mimage was updated\033[0m" 
                 fi
 
                 docker-compose up -d
