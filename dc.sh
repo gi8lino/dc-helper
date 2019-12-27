@@ -111,10 +111,9 @@ for dir in $(ls -d */); do
                 docker-compose up -d
 
                 if [ -n "$CLEANUP" ]; then
-                    ## remove old images
                     for image in ${old_images[*]}; do
-                        #docker rmi $image
-                        echo "remove old image '$image'"
+                        echo -e "\033[0;31mremove old image '$image'\033[0m"  #docker rmi $image
+                        docker rmi $image
                     done
                 fi
             done <<< "$(grep 'image:' docker-compose.yml)"
