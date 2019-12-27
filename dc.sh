@@ -89,11 +89,11 @@ for dir in $(ls -d */); do
 	fi	
 
 	# pull git if variable set
-        if [ -n "$GIT" ]; then
-		    if [ -d ".git" ]; then
-        	    git pull
-		    fi
+    if [ -n "$GIT" ]; then
+        if [ -d ".git" ]; then
+            git pull
         fi
+    fi
 
 	if [ -n "$UP" ]; then
         if [ -n "$UPDATE" ]; then
@@ -107,7 +107,10 @@ for dir in $(ls -d */); do
                 old_images=$(docker images -a | grep "$img" | awk '{print $3}')  # get image id
 
                 result=$(docker pull "${img/\$\{DOMAIN\}/$DOMAIN}")  # substitute '${DOMAIN}' variable
-                
+                if [[ ! $result =~ "up to date" ]]; then
+                    echo $result
+                fi
+
                 docker-compose up -d
 
                 if [ -n "$CLEANUP" ] && [[ ! $result =~ "up to date" ]]; then
