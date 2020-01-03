@@ -21,7 +21,7 @@ function ShowHelp {
         "" \
         "created by gi8lino (2019)" \
         "https://github.com/gi8lino/dc-helper"
-    exit 0
+    	exit 0
 }
 
 shopt -s nocasematch  # set string compare to not case senstive
@@ -31,39 +31,39 @@ unset IFS
 while [[ $# -gt 0 ]];do
     key="$1"
     case $key in
-	    up)
-	    UP="TRUE"
-	    shift  # pass argument
-	    ;;
-	    down)
-	    DOWN="TRUE"
-	    shift  # pass argument
-	    ;;
-	    -g|--git)
-	    GIT="TRUE"
-	    shift  # pass argument
+        up)
+	UP="TRUE"
+	shift  # pass argument
+	;;
+	down)
+	DOWN="TRUE"
+	shift  # pass argument
+	;;
+	-g|--git)
+	GIT="TRUE"
+	shift  # pass argument
         ;;
-	    -u|--update)
-	    UPDATE="TRUE"
-	    shift  # pass argument
-	    ;;
+	-u|--update)
+	UPDATE="TRUE"
+	shift  # pass argument
+	;;
         -c|--cleanup)
-	    CLEANUP="TRUE"
-	    shift  # pass argument
-	    ;;
-	    -v|--version)
-	    printf "$(basename $BASH_SOURCE) version: %s\n" "${VERSION}"
-	    exit 0
-	    ;;
-	    -h|--help)
-	    ShowHelp
-	    ;;
-	    *)  # unknown option
-	    printf "%s\n" \
-	       "$(basename $BASH_SOURCE): invalid option -- '$1'" \
-	       "Try '$(basename $BASH_SOURCE) --help' for more information."
+	CLEANUP="TRUE"
+	shift  # pass argument
+	;;
+	-v|--version)
+	printf "$(basename $BASH_SOURCE) version: %s\n" "${VERSION}"
+	exit 0
+	;;
+	-h|--help)
+	ShowHelp
+	;;
+	*)  # unknown option
+	printf "%s\n" \
+	    "$(basename $BASH_SOURCE): invalid option -- '$1'" \
+	    "Try '$(basename $BASH_SOURCE) --help' for more information."
         exit 1
-	    ;;
+	;;
     esac  # end case
 done
 
@@ -80,22 +80,22 @@ if [ ! -n "$UP" ] && [ ! -n "$DOWN" ]; then
 fi
 
 for dir in $(ls -d */); do
-	cd $dir
-	
-	if [ ! -f "docker-compose.yml" ]; then
-		echo -e "inside \033[0;31m$(basename $dir)\033[0m no 'docker-compose.yml' found"
-		cd ..
-		continue
-	fi	
+    cd $dir
 
-	# pull git if variable set
+    if [ ! -f "docker-compose.yml" ]; then
+        echo -e "inside \033[0;31m$(basename $dir)\033[0m no 'docker-compose.yml' found"
+	cd ..
+	continue
+    fi	
+
+    # pull git if variable set
     if [ -n "$GIT" ]; then
         if [ -d ".git" ]; then
             git pull
         fi
     fi
 
-	if [ -n "$UP" ]; then
+    if [ -n "$UP" ]; then
         if [ -n "$UPDATE" ]; then
             # load variables from .env
             if [ -f ".env" ]; then
@@ -123,11 +123,12 @@ for dir in $(ls -d */); do
         else
             docker-compose up -d
         fi
-	fi
+    fi
 
     if [ -n "$DOWN" ]; then
         docker-compose down
     fi
 
-	cd ..
+    cd ..
 done
+
