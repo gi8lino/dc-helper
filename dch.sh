@@ -34,43 +34,43 @@ commands=()
 while [[ $# -gt 0 ]]; do
     key="$1"
     case $key in
-    up)
-    commands+=("UP")
-	shift
-	;;
-	down)
-	commands+=("DOWN")
-	shift
-	;;
-    restart)
-	commands+=("RESTART")
-	shift
-	;;
-	git)
-    commands+=("GIT")
-	shift
-    ;;
-	update)
-    commands+=("UPDATE")
-	shift
-	;;
-    cleanup)
-    commands+=("CLEANUP")
-	shift
-	;;
-	-v|--version)
-	printf "$(basename $BASH_SOURCE) version: %s\n" "${VERSION}"
-	exit 0
-	;;
-	-h|--help)
-	ShowHelp
-	;;
-	*)  # unknown option
-	printf "%s\n" \
-	    "$(basename $BASH_SOURCE): invalid option -- '$1'" \
-	    "Try '$(basename $BASH_SOURCE) --help' for more information."
+        up)
+        commands+=("UP")
+        shift
+        ;;
+        down)
+        commands+=("DOWN")
+        shift
+        ;;
+        restart)
+        commands+=("RESTART")
+        shift
+        ;;
+        git)
+        commands+=("GIT")
+        shift
+        ;;
+        update)
+        commands+=("UPDATE")
+        shift
+        ;;
+        cleanup)
+        commands+=("CLEANUP")
+        shift
+        ;;
+        -v|--version)
+        printf "$(basename $BASH_SOURCE) version: %s\n" "${VERSION}"
+        exit 0
+        ;;
+        -h|--help)
+        ShowHelp
+        ;;
+        *)  # unknown option
+        printf "%s\n" \
+            "$(basename $BASH_SOURCE): invalid option -- '$1'" \
+                "Try '$(basename $BASH_SOURCE) --help' for more information."
         exit 1
-	;;
+        ;;
     esac
 done
 
@@ -139,3 +139,4 @@ for dir in $(ls -d */); do
         esac
     done
 done
+
