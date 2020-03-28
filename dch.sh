@@ -81,7 +81,7 @@ done
     [[ " ${commands[@]} " =~ "DOWN" ]] || \
     [[ " ${commands[@]} " =~ "RESTART" ]] || \
     [[ " ${commands[@]} " =~ "CLEANUP" ]] || \
-    [[ " ${commands[@]} " =~ "UPDATE" ]] && docker_commands="true"
+    [[ " ${commands[@]} " =~ "UPDATE" ]] && docker_commands=true
 
 IFS=$(echo -en "\n\b")  # change separetor for directories with space
 for dir in $(ls -d */); do
@@ -114,7 +114,7 @@ for dir in $(ls -d */); do
                 [ $cmd == "RESTART" ] && echo -e "execute \033[0;35mdocker-compose restart\033[0m"  && docker-compose restart
                 cd ..
             else
-                [ $docker_msg == true ] && echo -e "[0;31m no 'docker-compose.yml' found\033[0m" && docker_msg=false
+                [ $docker_msg == true ] && echo -e "\033[0;31mno 'docker-compose.yml' found\033[0m" && docker_msg=false
             fi
             ;;
             GIT)
@@ -129,7 +129,7 @@ for dir in $(ls -d */); do
             done
             ;;
             CLEANUP)
-            [ ${#images} != 0 ] && "cleanup images..."
+            [ ${#images} != 0 ] && echo -e "cleanup images..."
             for image in ${images[*]}; do
                 IFS='|' read -ra img <<< "$image"
                 [ ! -z "${img[1]}" ] && echo -e "remove old image \033[0;35m${img[0]}\033[0m" && docker rmi ${img[1]} || \
