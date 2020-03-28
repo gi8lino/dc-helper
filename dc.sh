@@ -1,25 +1,28 @@
-#!/bin/bash
+#!/bin/sh
 
-VERSION="0.0.2"
+VERSION="0.1.0"
 
 function ShowHelp {
     printf "%s\n" \
-        "Usage: $(basename $BASH_SOURCE) UP|DOWN [-u|--update] [-c|--cleanup] [-g|--git] | [-h|--help] | [-v|--version]" \
+        "Usage: $(basename $BASH_SOURCE) [UP] [DOWN] [RESTART] [UPDATE] [CLEANUP] [GIT] | [-h|--help] | [-v|--version]" \
 	    "" \
-	    "iterate over current sub directories and execute a 'docker-compose up -d' or 'docker-compose down'" \
+        "A little helper tool to manage directories with docker-compose files inside." \
+	    "Iterate over current sub directories and execute the defined commands." \
+        "It execute the commands in order you pass them to this script!" \
         "" \
-        "Parameters:" \
-        "UP                 run docker-compose up -d" \
-        "DOWN               run docker-compose down" \
+        "Commands:" \
+        "up                 run docker-compose up -d" \
+        "down               run docker-compose down" \
+        "restart            run docker-compose restart" \
+        "update             try to update image" \
+        "cleanup            remove old images" \
+        "git                pull latest update from a git repo" \
         "" \
         "Optional Parameters" \
-        "-u, --update       try to update image" \
-        "-c, --cleanup      remove old images" \
-        "-g, --git          pull latest update from a git repo" \
         "-h, --help         display this help and exit" \
         "-v, --version      output version information and exit" \
         "" \
-        "created by gi8lino (2019)" \
+        "created by gi8lino (2020)" \
         "https://github.com/gi8lino/dc-helper"
     	exit 0
 }
@@ -27,29 +30,33 @@ function ShowHelp {
 shopt -s nocasematch  # set string compare to not case senstive
 unset IFS
 
-# read start parameter
-while [[ $# -gt 0 ]];do
+commands=()
+while [[ $# -gt 0 ]]; do
     key="$1"
     case $key in
-        up)
-	UP="TRUE"
-	shift  # pass argument
+    up)
+    commands+=("UP")
+	shift
 	;;
 	down)
-	DOWN="TRUE"
-	shift  # pass argument
+	commands+=("DOWN")
+	shift
 	;;
-	-g|--git)
-	GIT="TRUE"
-	shift  # pass argument
-        ;;
-	-u|--update)
-	UPDATE="TRUE"
-	shift  # pass argument
+    restart)
+	commands+=("RESTART")
+	shift
 	;;
-        -c|--cleanup)
-	CLEANUP="TRUE"
-	shift  # pass argument
+	git)
+    commands+=("GIT")
+	shift
+    ;;
+	update)
+    commands+=("UPDATE")
+	shift
+	;;
+    cleanup)
+    commands+=("CLEANUP")
+	shift
 	;;
 	-v|--version)
 	printf "$(basename $BASH_SOURCE) version: %s\n" "${VERSION}"
@@ -64,71 +71,71 @@ while [[ $# -gt 0 ]];do
 	    "Try '$(basename $BASH_SOURCE) --help' for more information."
         exit 1
 	;;
-    esac  # end case
+    esac
 done
 
-# check if both parameter are set
-if [ -n "$UP" ] && [ -n "$DOWN" ]; then
-    echo -e "\033[0;31myou cannot set parameter for 'UP' and 'DOWN'\033[0m" 
-    exit 1
-fi
+[ ${#commands} == 0 ] && ShowHelp
 
-# check if no parameter is set
-if [ ! -n "$UP" ] && [ ! -n "$DOWN" ]; then
-    echo -e "\033[0;31myou must set a parameter 'UP' or 'DOWN'\033[0m" 
-    exit 1
-fi
+ # check if it is neccessary to get image id's
+ [[ " ${commands[@]} " =~ "UP" ]] || \
+    [[ " ${commands[@]} " =~ "DOWN" ]] || \
+    [[ " ${commands[@]} " =~ "RESTART" ]] || \
+    [[ " ${commands[@]} " =~ "CLEANUP" ]] || \
+    [[ " ${commands[@]} " =~ "UPDATE" ]] && docker_commands="true"
 
+IFS=$(echo -en "\n\b")  # change separetor for directories with space
 for dir in $(ls -d */); do
-    cd $dir
+    dir=$(basename $dir)
+    echo -e "processing \033[0;35m$dir\033[0m"
 
-    if [ ! -f "docker-compose.yml" ]; then
-        echo -e "inside \033[0;31m$(basename $dir)\033[0m no 'docker-compose.yml' found"
-	cd ..
-	continue
-    fi	
+    images=()   
+    if [ -n "$docker_commands" ]; then
+        if [ -f "$dir/docker-compose.yml" ]; then
+            [ -f "$dir/.env" ] && source "$dir/.env"  # load variables from .env
 
-    # pull git if variable set
-    if [ -n "$GIT" ]; then
-        if [ -d ".git" ]; then
-            git pull
+            while IFS=' ', read -ra service; do
+                img_url="${service[1]/\$\{DOMAIN\}/$DOMAIN}"  # substitute '${DOMAIN}' variable if set
+                [[ ! $img_url =~ ":" ]] && img_url="$img_url:latest"  # add 'latest' tag if no tag is set
+                img_id=$(docker images --filter=reference=$img_url | tail -n +2 | awk '{print $3}')  # get image id
+                images+=("$img_url|$img_id")
+            done <<< "$(grep 'image:' $dir/docker-compose.yml)"
         fi
     fi
 
-    if [ -n "$UP" ]; then
-        if [ -n "$UPDATE" ]; then
-            # load variables from .env
-            if [ -f ".env" ]; then
-                source .env
+    docker_msg=true  # to avoid multiple msg if docker-compose is found or not
+    for cmd in ${commands[*]}; do
+        case $cmd in
+            UP|DOWN|RESTART)
+            if [ -f "$dir/docker-compose.yml" ]; then 
+                [ $docker_msg == true ] && echo -e "'docker-compose.yml' found" && docker_msg=false
+                cd "$dir/"
+                [ $cmd == "UP" ]      && echo -e "execute \033[0;35mdocker-compose up -d\033[0m"    && docker-compose up -d
+                [ $cmd == "DOWN" ]    && echo -e "execute \033[0;35mdocker-compose down\033[0m"     && docker-compose down
+                [ $cmd == "RESTART" ] && echo -e "execute \033[0;35mdocker-compose restart\033[0m"  && docker-compose restart
+                cd ..
+            else
+                [ $docker_msg == true ] && echo -e "[0;31m no 'docker-compose.yml' found\033[0m" && docker_msg=false
             fi
-
-            while IFS=' ', read -a input; do
-                img="${input[1]}"
-                old_images=$(docker images -a | grep "$img" | awk '{print $3}')  # get image id
-
-                result=$(docker pull "${img/\$\{DOMAIN\}/$DOMAIN}")  # substitute '${DOMAIN}' variable
-                if [[ ! $result =~ "up to date" ]]; then
-                    echo -e "\033[0;32mimage was updated\033[0m" 
-                fi
-
-                docker-compose up -d
-
-                if [ -n "$CLEANUP" ] && [[ ! $result =~ "up to date" ]]; then
-                    for image in ${old_images[*]}; do
-                        echo -e "\033[0;31mremove old image '$image'\033[0m"  #docker rmi $image
-                        docker rmi $image
-                    done
-                fi
-            done <<< "$(grep 'image:' docker-compose.yml)"
-        else
-            docker-compose up -d
-        fi
-    fi
-
-    if [ -n "$DOWN" ]; then
-        docker-compose down
-    fi
-
-    cd ..
+            ;;
+            GIT)
+            [ -d "$dir/.git" ] && echo -e "git repository found" && git --git-dir="$dir/.git" pull || echo -e "\033[0;31mno git repository found\033[0m"
+            ;;
+            UPDATE)
+            [ ${#images} != 0 ] && echo -e "update images..."
+            for image in ${images[*]}; do
+                IFS='|' read -ra img <<< "$image"
+                [[ $(docker pull ${img[0]}) =~ "up to date" ]] && \
+                        echo -e "image \033[0;35m${img[0]}\033[0m is \033[0;32mupdate to date\033[0m" 
+            done
+            ;;
+            CLEANUP)
+            [ ${#images} != 0 ] && "cleanup images..."
+            for image in ${images[*]}; do
+                IFS='|' read -ra img <<< "$image"
+                [ ! -z "${img[1]}" ] && echo -e "remove old image \033[0;35m${img[0]}\033[0m" && docker rmi ${img[1]} || \
+                        echo -e "image \033[0;35m${img}\033[0m\033[0;31m is not locally\033[0m"
+            done
+            ;;
+        esac
+    done
 done
-
